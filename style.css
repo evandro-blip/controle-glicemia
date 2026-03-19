@@ -1,0 +1,178 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  color: #111;
+}
+
+.container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+h1 {
+  font-size: 24px;
+  margin: 0 0 20px;
+  color: #000;
+}
+
+h2 {
+  font-size: 20px;
+  margin: 0 0 16px;
+}
+
+h3 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.hidden {
+  display: none !important;
+}
+
+label {
+  display: block;
+  margin: 10px 0 6px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #bdbdbd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+button {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #616161;
+}
+
+button.danger {
+  background: #b71c1c;
+}
+
+.divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 20px 0;
+}
+
+.ultima-medicao {
+  margin: 8px 0 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista li {
+  background: #f8f8f8;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.item-valor {
+  font-size: 18px;
+  font-weight: bold;
+  color: #111;
+}
+
+.item-data {
+  color: #444;
+  margin-top: 4px;
+}
+
+.item-tipo {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.item-observacao {
+  margin-top: 8px;
+  color: #444;
+  white-space: pre-wrap;
+}
+
+.item-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.item-acoes button {
+  width: auto;
+  margin-top: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.item-acoes .editar {
+  background: #1565c0;
+}
+
+.item-acoes .excluir {
+  background: #c62828;
+}
+
+.vazio {
+  text-align: center;
+  color: #666;
+  padding: 14px;
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Controle de Glicemia</title>
+  <meta name="theme-color" content="#2e7d32" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Controle de Glicemia</h1>
+
+    <section id="cadastro" class="card">
+      <h2>Cadastro inicial</h2>
+
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" placeholder="Seu nome" />
+
+      <label for="nascimento">Data de nascimento</label>
+      <input type="date" id="nascimento" />
+
+      <button onclick="salvarCadastro()">Salvar</button>
+    </section>
+
+    <section id="app" class="card hidden">
+      <h2 id="boasVindas"></h2>
+      <p id="ultima" class="ultima-medicao"></p>
+
+      <div class="divider"></div>
+
+      <h3>Nova Medição</h3>
+
+      <label for="dataMedicao">Data da medição</label>
+      <input type="date" id="dataMedicao" />
+
+      <label for="horaMedicao">Hora da medição</label>
+      <input type="time" id="horaMedicao" />
+
+      <label for="tipoMedicao">Tipo da medição</label>
+      <select id="tipoMedicao">
+        <option value="">Selecione</option>
+        <option value="Jejum">Jejum</option>
+        <option value="Antes do almoço">Antes do almoço</option>
+        <option value="Após almoço">Após almoço</option>
+        <option value="Antes do jantar">Antes do jantar</option>
+        <option value="Após jantar">Após jantar</option>
+        <option value="Antes de dormir">Antes de dormir</option>
+        <option value="Outro">Outro</option>
+      </select>
+
+      <label for="valor">Valor da glicemia</label>
+      <input type="number" id="valor" placeholder="Ex: 120" />
+
+      <label for="observacao">Observação (opcional)</label>
+      <textarea id="observacao" rows="3" placeholder="Ex: medi após café da manhã"></textarea>
+
+      <button id="botaoSalvar" onclick="salvarOuAtualizarMedicao()">Salvar Medição</button>
+      <button id="botaoCancelarEdicao" class="secondary hidden" onclick="cancelarEdicao()">Cancelar edição</button>
+
+      <div class="divider"></div>
+
+      <h3>Histórico</h3>
+      <ul id="lista" class="lista"></ul>
+
+      <div class="divider"></div>
+
+      <h3>Gerar Relatório</h3>
+
+      <label for="dataInicio">Data inicial</label>
+      <input type="date" id="dataInicio" />
+
+      <label for="dataFim">Data final</label>
+      <input type="date" id="dataFim" />
+
+      <button onclick="gerarRelatorio()">Gerar Relatório Clínico</button>
+
+      <button class="danger" onclick="limparDados()">Limpar todas as medições</button>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

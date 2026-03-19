@@ -1,0 +1,9 @@
+{
+  "name": "Controle de Glicemia",
+  "short_name": "Glicemia",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f2f2",
+  "theme_color": "#2e7d32",
+  "icons": []
+}
