@@ -126,6 +126,8 @@ function carregarLista() {
     });
 
   dadosOrdenados.forEach((item) => {
+    const classificacao = classificarMedicao(item.valor, item.tipo);
+
     const li = document.createElement("li");
 
     li.innerHTML = `
@@ -134,6 +136,7 @@ function carregarLista() {
           <div class="item-valor">${item.valor} mg/dL</div>
           <div class="item-data">${formatarData(item.data)} às ${item.hora}</div>
           <div class="item-tipo">${item.tipo}</div>
+          <div class="item-observacao"><strong>Classificação:</strong> ${classificacao.classe}</div>
           ${item.observacao ? `<div class="item-observacao">${item.observacao}</div>` : ""}
         </div>
       </div>
@@ -219,39 +222,76 @@ function formatarData(dataIso) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function normalizarTipo(tipo) {
+  return (tipo || "").toLowerCase().trim();
+}
+
 function classificarMedicao(valor, tipo) {
-  const tipoNormalizado = (tipo || "").toLowerCase();
+  const t = normalizarTipo(tipo);
+
+  if (valor < 54) {
+    return { classe: "Hipoglicemia nível 2", cor: [183, 28, 28], severidade: 5 };
+  }
 
   if (valor < 70) {
-    return { classe: "Hipoglicemia", cor: [198, 40, 40] };
+    return { classe: "Hipoglicemia nível 1", cor: [198, 40, 40], severidade: 4 };
   }
 
-  if (tipoNormalizado.includes("jejum")) {
-    if (valor <= 99) return { classe: "Dentro da faixa", cor: [46, 125, 50] };
-    if (valor <= 125) return { classe: "Atenção", cor: [245, 124, 0] };
-    if (valor <= 180) return { classe: "Elevado", cor: [239, 108, 0] };
-    return { classe: "Muito elevado", cor: [198, 40, 40] };
+  // Jejum
+  if (t.includes("jejum")) {
+    if (valor >= 80 && valor <= 130) {
+      return { classe: "Dentro da meta", cor: [46, 125, 50], severidade: 1 };
+    }
+    if (valor >= 70 && valor < 80) {
+      return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2 };
+    }
+    if (valor > 130 && valor <= 180) {
+      return { classe: "Acima da meta", cor: [245, 124, 0], severidade: 2 };
+    }
+    return { classe: "Muito elevado", cor: [198, 40, 40], severidade: 3 };
   }
 
-  if (
-    tipoNormalizado.includes("após") ||
-    tipoNormalizado.includes("depois") ||
-    tipoNormalizado.includes("pós")
-  ) {
-    if (valor <= 140) return { classe: "Dentro da faixa", cor: [46, 125, 50] };
-    if (valor <= 180) return { classe: "Atenção", cor: [245, 124, 0] };
-    return { classe: "Muito elevado", cor: [198, 40, 40] };
+  // Pré-prandial
+  if (t.includes("antes do almoço") || t.includes("antes do jantar")) {
+    if (valor >= 80 && valor <= 130) {
+      return { classe: "Dentro da meta", cor: [46, 125, 50], severidade: 1 };
+    }
+    if (valor >= 70 && valor < 80) {
+      return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2 };
+    }
+    if (valor > 130 && valor <= 180) {
+      return { classe: "Acima da meta", cor: [245, 124, 0], severidade: 2 };
+    }
+    return { classe: "Elevado", cor: [198, 40, 40], severidade: 3 };
   }
 
-  if (valor <= 140) return { classe: "Dentro da faixa", cor: [46, 125, 50] };
-  if (valor <= 180) return { classe: "Atenção", cor: [245, 124, 0] };
-  return { classe: "Elevado", cor: [198, 40, 40] };
+  // Pós-prandial
+  if (t.includes("após") || t.includes("pós") || t.includes("depois")) {
+    if (valor < 180) {
+      return { classe: "Dentro da meta pós-prandial", cor: [46, 125, 50], severidade: 1 };
+    }
+    if (valor >= 180 && valor <= 250) {
+      return { classe: "Acima da meta pós-prandial", cor: [245, 124, 0], severidade: 2 };
+    }
+    return { classe: "Muito elevado", cor: [198, 40, 40], severidade: 3 };
+  }
+
+  // Antes de dormir / outro / genérico
+  if (valor >= 80 && valor <= 140) {
+    return { classe: "Faixa aceitável", cor: [46, 125, 50], severidade: 1 };
+  }
+  if (valor >= 70 && valor < 80) {
+    return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2 };
+  }
+  if (valor > 140 && valor <= 180) {
+    return { classe: "Atenção", cor: [245, 124, 0], severidade: 2 };
+  }
+  return { classe: "Elevado", cor: [198, 40, 40], severidade: 3 };
 }
 
 function calcularMedia(lista) {
   if (!lista.length) return 0;
-  const soma = lista.reduce((acc, item) => acc + item.valor, 0);
-  return soma / lista.length;
+  return lista.reduce((acc, item) => acc + item.valor, 0) / lista.length;
 }
 
 function calcularDesvioPadrao(lista) {
@@ -276,37 +316,44 @@ function obterTendencia(listaOrdenada) {
 
 function agruparPorTipo(lista) {
   const grupos = {};
-
   lista.forEach((item) => {
     if (!grupos[item.tipo]) grupos[item.tipo] = [];
     grupos[item.tipo].push(item);
   });
-
   return grupos;
 }
 
 function gerarAlertas(lista) {
-  const hipo = lista.filter((i) => i.valor < 70).length;
-  const muitoAltos = lista.filter((i) => i.valor > 180).length;
-  const elevados = lista.filter((i) => i.valor > 140).length;
+  const hipo1 = lista.filter((i) => i.valor < 70).length;
+  const hipo2 = lista.filter((i) => i.valor < 54).length;
+  const acima180 = lista.filter((i) => i.valor > 180).length;
+  const acima250 = lista.filter((i) => i.valor > 250).length;
   const desvio = calcularDesvioPadrao(lista);
 
   const alertas = [];
 
-  if (hipo > 0) {
-    alertas.push(`${hipo} episódio(s) com valor abaixo de 70 mg/dL.`);
+  if (hipo1 > 0) {
+    alertas.push(`${hipo1} episódio(s) com glicemia abaixo de 70 mg/dL.`);
   }
 
-  if (muitoAltos > 0) {
-    alertas.push(`${muitoAltos} episódio(s) com valor acima de 180 mg/dL.`);
+  if (hipo2 > 0) {
+    alertas.push(`${hipo2} episódio(s) com glicemia abaixo de 54 mg/dL.`);
   }
 
-  if (elevados >= 3) {
-    alertas.push(`Frequência relevante de medições acima de 140 mg/dL no período.`);
+  if (acima180 >= 3) {
+    alertas.push(`Frequência relevante de valores acima de 180 mg/dL no período.`);
+  } else if (acima180 > 0) {
+    alertas.push(`${acima180} episódio(s) com glicemia acima de 180 mg/dL.`);
   }
 
-  if (desvio > 30) {
-    alertas.push(`Variabilidade glicêmica aumentada no período.`);
+  if (acima250 > 0) {
+    alertas.push(`${acima250} episódio(s) com glicemia acima de 250 mg/dL.`);
+  }
+
+  if (desvio > 50) {
+    alertas.push("Variabilidade glicêmica muito elevada no período.");
+  } else if (desvio > 30) {
+    alertas.push("Variabilidade glicêmica aumentada no período.");
   }
 
   if (alertas.length === 0) {
@@ -318,11 +365,17 @@ function gerarAlertas(lista) {
 
 function contarClassificacoes(lista) {
   const contagem = {
-    "Dentro da faixa": 0,
+    "Dentro da meta": 0,
+    "Dentro da meta pós-prandial": 0,
+    "Faixa aceitável": 0,
     "Atenção": 0,
+    "Atenção para queda": 0,
+    "Acima da meta": 0,
+    "Acima da meta pós-prandial": 0,
     "Elevado": 0,
     "Muito elevado": 0,
-    "Hipoglicemia": 0
+    "Hipoglicemia nível 1": 0,
+    "Hipoglicemia nível 2": 0
   };
 
   lista.forEach((item) => {
@@ -335,10 +388,10 @@ function contarClassificacoes(lista) {
   return contagem;
 }
 
-function adicionarCabecalhoRodape(doc, titulo = "Relatório de Glicemia") {
-  const pageCount = doc.getNumberOfPages();
+function adicionarCabecalhoRodape(doc, titulo = "Relatório Clínico de Glicemia") {
+  const totalPaginas = doc.getNumberOfPages();
 
-  for (let i = 1; i <= pageCount; i++) {
+  for (let i = 1; i <= totalPaginas; i++) {
     doc.setPage(i);
 
     doc.setFont("helvetica", "bold");
@@ -363,7 +416,7 @@ function adicionarCabecalhoRodape(doc, titulo = "Relatório de Glicemia") {
       292
     );
 
-    doc.text(`Página ${i} de ${pageCount}`, 195, 292, { align: "right" });
+    doc.text(`Página ${i} de ${totalPaginas}`, 195, 292, { align: "right" });
   }
 }
 
@@ -378,7 +431,7 @@ function desenharBlocoResumo(doc, x, y, w, h, titulo, valor, corRGB = [46, 125, 
   doc.text(titulo, x + 4, y + 7);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(corRGB[0], corRGB[1], corRGB[2]);
   doc.text(String(valor), x + 4, y + 16);
 }
@@ -412,11 +465,7 @@ async function gerarRelatorio() {
 
   const filtrados = dados
     .filter((d) => d.data >= dataInicio && d.data <= dataFim)
-    .sort((a, b) => {
-      const dataA = new Date(`${a.data}T${a.hora}`);
-      const dataB = new Date(`${b.data}T${b.hora}`);
-      return dataA - dataB;
-    });
+    .sort((a, b) => new Date(`${a.data}T${a.hora}`) - new Date(`${b.data}T${b.hora}`));
 
   if (filtrados.length === 0) {
     alert("Nenhuma medição encontrada no período selecionado.");
@@ -503,7 +552,7 @@ async function gerarRelatorio() {
 
   desenharBlocoResumo(doc, 15, y, 58, 22, "Tendência", tendencia, [123, 31, 162]);
   desenharBlocoResumo(doc, 76, y, 58, 22, "Variabilidade", `${desvio.toFixed(1)}`, [0, 121, 107]);
-  desenharBlocoResumo(doc, 137, y, 58, 22, "Dentro da faixa", classificacoes["Dentro da faixa"], [46, 125, 50]);
+  desenharBlocoResumo(doc, 137, y, 58, 22, "Hipoglicemias", classificacoes["Hipoglicemia nível 1"] + classificacoes["Hipoglicemia nível 2"], [198, 40, 40]);
 
   y += 32;
 
@@ -517,29 +566,40 @@ async function gerarRelatorio() {
   const total = filtrados.length;
   const pct = (n) => `${((n / total) * 100).toFixed(1)}%`;
 
+  const dentroMeta =
+    classificacoes["Dentro da meta"] +
+    classificacoes["Dentro da meta pós-prandial"] +
+    classificacoes["Faixa aceitável"];
+
+  const atencao =
+    classificacoes["Atenção"] +
+    classificacoes["Atenção para queda"] +
+    classificacoes["Acima da meta"] +
+    classificacoes["Acima da meta pós-prandial"];
+
+  const alto =
+    classificacoes["Elevado"] +
+    classificacoes["Muito elevado"] +
+    classificacoes["Hipoglicemia nível 1"] +
+    classificacoes["Hipoglicemia nível 2"];
+
   doc.setFillColor(248, 249, 250);
   doc.setDrawColor(225, 225, 225);
-  doc.roundedRect(15, y, 180, 34, 3, 3, "FD");
+  doc.roundedRect(15, y, 180, 28, 3, 3, "FD");
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
 
   doc.setTextColor(46, 125, 50);
-  doc.text(`Dentro da faixa: ${classificacoes["Dentro da faixa"]} (${pct(classificacoes["Dentro da faixa"])})`, 20, y + 9);
+  doc.text(`Dentro da meta/faixa: ${dentroMeta} (${pct(dentroMeta)})`, 20, y + 10);
 
   doc.setTextColor(245, 124, 0);
-  doc.text(`Atenção: ${classificacoes["Atenção"]} (${pct(classificacoes["Atenção"])})`, 20, y + 17);
-
-  doc.setTextColor(239, 108, 0);
-  doc.text(`Elevado: ${classificacoes["Elevado"]} (${pct(classificacoes["Elevado"])})`, 105, y + 9);
+  doc.text(`Atenção: ${atencao} (${pct(atencao)})`, 20, y + 20);
 
   doc.setTextColor(198, 40, 40);
-  doc.text(`Muito elevado: ${classificacoes["Muito elevado"]} (${pct(classificacoes["Muito elevado"])})`, 105, y + 17);
+  doc.text(`Alto risco/fora da meta: ${alto} (${pct(alto)})`, 105, y + 10);
 
-  doc.setTextColor(156, 39, 176);
-  doc.text(`Hipoglicemia: ${classificacoes["Hipoglicemia"]} (${pct(classificacoes["Hipoglicemia"])})`, 20, y + 25);
-
-  y += 42;
+  y += 36;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -603,9 +663,9 @@ async function gerarRelatorio() {
     data: 15,
     hora: 35,
     tipo: 52,
-    valor: 98,
-    classe: 120,
-    obs: 152
+    valor: 96,
+    classe: 116,
+    obs: 150
   };
 
   function desenharCabecalhoTabela() {
@@ -627,15 +687,14 @@ async function gerarRelatorio() {
   }
 
   desenharCabecalhoTabela();
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
 
   filtrados.forEach((item) => {
     const classificacao = classificarMedicao(item.valor, item.tipo);
     const obsLinhas = doc.splitTextToSize(item.observacao || "-", 40);
-    const tipoLinhas = doc.splitTextToSize(item.tipo, 42);
-    const classeLinhas = doc.splitTextToSize(classificacao.classe, 28);
+    const tipoLinhas = doc.splitTextToSize(item.tipo, 40);
+    const classeLinhas = doc.splitTextToSize(classificacao.classe, 30);
 
     const alturaLinha = Math.max(
       6,
@@ -690,21 +749,23 @@ async function gerarRelatorio() {
     observacoesInterpretativas.push("Os valores demonstram comportamento relativamente estável no período analisado.");
   }
 
-  if (classificacoes["Hipoglicemia"] > 0) {
-    observacoesInterpretativas.push("Foram identificados episódios compatíveis com hipoglicemia, merecendo atenção na correlação com sintomas e rotina alimentar ou medicamentosa.");
+  if ((classificacoes["Hipoglicemia nível 1"] + classificacoes["Hipoglicemia nível 2"]) > 0) {
+    observacoesInterpretativas.push("Foram identificados episódios compatíveis com hipoglicemia, merecendo atenção na correlação com sintomas, alimentação e medicação.");
   }
 
-  if (classificacoes["Muito elevado"] > 0 || classificacoes["Elevado"] > 0) {
-    observacoesInterpretativas.push("Há registros acima da faixa esperada em parte das medições, o que pode ser útil para revisão do padrão glicêmico pelo profissional responsável.");
+  if ((classificacoes["Muito elevado"] + classificacoes["Elevado"] + classificacoes["Acima da meta pós-prandial"]) > 0) {
+    observacoesInterpretativas.push("Há registros acima da meta em parte das medições, o que pode ser útil para revisão do padrão glicêmico pelo profissional responsável.");
   }
 
-  if (desvio > 30) {
-    observacoesInterpretativas.push("A variabilidade glicêmica está aumentada, sugerindo oscilação relevante entre as medições.");
+  if (desvio > 50) {
+    observacoesInterpretativas.push("A variabilidade glicêmica está muito elevada, sugerindo oscilação importante entre as medições.");
+  } else if (desvio > 30) {
+    observacoesInterpretativas.push("A variabilidade glicêmica está aumentada no período.");
   } else {
     observacoesInterpretativas.push("A variabilidade glicêmica está relativamente controlada dentro do conjunto de medições registradas.");
   }
 
-  observacoesInterpretativas.push("Este relatório é um material de apoio e não substitui avaliação clínica, ajuste terapêutico ou interpretação individualizada pelo profissional de saúde.");
+  observacoesInterpretativas.push("Este relatório é um material de apoio e não substitui avaliação médica individualizada.");
 
   doc.setFillColor(248, 249, 250);
   doc.setDrawColor(225, 225, 225);
