@@ -1,4 +1,4 @@
-const CACHE_NAME = "glicemia-cache-v100";
+const CACHE_NAME = "glicemia-cache-v101";
 
 const FILES_TO_CACHE = [
   "./",
