@@ -1,16 +1,85 @@
 let indiceEdicao = null;
 
+function formatarCampoNascimento(valor) {
+  const numeros = valor.replace(/\D/g, "").slice(0, 8);
+
+  if (numeros.length <= 2) return numeros;
+  if (numeros.length <= 4) return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
+  return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4)}`;
+}
+
+function normalizarDataNascimento(valor) {
+  const texto = valor.trim();
+
+  if (!texto) return null;
+
+  const partes = texto.split("/");
+  if (partes.length !== 3) return null;
+
+  let [dia, mes, ano] = partes.map((p) => p.trim());
+
+  if (!dia || !mes || !ano) return null;
+
+  if (!/^\d+$/.test(dia) || !/^\d+$/.test(mes) || !/^\d+$/.test(ano)) return null;
+
+  dia = parseInt(dia, 10);
+  mes = parseInt(mes, 10);
+
+  if (ano.length === 2) {
+    const ano2 = parseInt(ano, 10);
+    ano = ano2 <= 30 ? 2000 + ano2 : 1900 + ano2;
+  } else if (ano.length === 4) {
+    ano = parseInt(ano, 10);
+  } else {
+    return null;
+  }
+
+  if (mes < 1 || mes > 12) return null;
+  if (dia < 1 || dia > 31) return null;
+  if (ano < 1900 || ano > 2100) return null;
+
+  const dataTeste = new Date(ano, mes - 1, dia);
+
+  if (
+    dataTeste.getFullYear() !== ano ||
+    dataTeste.getMonth() !== mes - 1 ||
+    dataTeste.getDate() !== dia
+  ) {
+    return null;
+  }
+
+  const diaStr = String(dia).padStart(2, "0");
+  const mesStr = String(mes).padStart(2, "0");
+
+  return `${ano}-${mesStr}-${diaStr}`;
+}
+
+function iniciarMascaraNascimento() {
+  const campo = document.getElementById("nascimento");
+  if (!campo) return;
+
+  campo.addEventListener("input", (e) => {
+    e.target.value = formatarCampoNascimento(e.target.value);
+  });
+}
+
 function salvarCadastro() {
   const nome = document.getElementById("nome").value.trim();
-  const nasc = document.getElementById("nascimento").value;
+  const nascimentoDigitado = document.getElementById("nascimento").value.trim();
+  const nascimentoNormalizado = normalizarDataNascimento(nascimentoDigitado);
 
-  if (!nome || !nasc) {
+  if (!nome || !nascimentoDigitado) {
     alert("Preencha todos os campos.");
     return;
   }
 
+  if (!nascimentoNormalizado) {
+    alert("Informe uma data de nascimento válida. Exemplo: 28/05/1978");
+    return;
+  }
+
   localStorage.setItem("nome", nome);
-  localStorage.setItem("nascimento", nasc);
+  localStorage.setItem("nascimento", nascimentoNormalizado);
 
   alert("Cadastro realizado com sucesso!");
   iniciarApp();
@@ -230,63 +299,59 @@ function classificarMedicao(valor, tipo) {
   const t = normalizarTipo(tipo);
 
   if (valor < 54) {
-    return { classe: "Hipoglicemia nível 2", cor: [183, 28, 28], severidade: 5 };
+    return { classe: "Hipoglicemia nível 2", cor: [183, 28, 28], severidade: 5, grupo: "baixo" };
   }
 
   if (valor < 70) {
-    return { classe: "Hipoglicemia nível 1", cor: [198, 40, 40], severidade: 4 };
+    return { classe: "Hipoglicemia nível 1", cor: [198, 40, 40], severidade: 4, grupo: "baixo" };
   }
 
-  // Jejum
   if (t.includes("jejum")) {
     if (valor >= 80 && valor <= 130) {
-      return { classe: "Dentro da meta", cor: [46, 125, 50], severidade: 1 };
+      return { classe: "Dentro da meta", cor: [46, 125, 50], severidade: 1, grupo: "meta" };
     }
     if (valor >= 70 && valor < 80) {
-      return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2 };
+      return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2, grupo: "atencao" };
     }
     if (valor > 130 && valor <= 180) {
-      return { classe: "Acima da meta", cor: [245, 124, 0], severidade: 2 };
+      return { classe: "Acima da meta", cor: [245, 124, 0], severidade: 2, grupo: "atencao" };
     }
-    return { classe: "Muito elevado", cor: [198, 40, 40], severidade: 3 };
+    return { classe: "Muito elevado", cor: [198, 40, 40], severidade: 3, grupo: "alto" };
   }
 
-  // Pré-prandial
   if (t.includes("antes do almoço") || t.includes("antes do jantar")) {
     if (valor >= 80 && valor <= 130) {
-      return { classe: "Dentro da meta", cor: [46, 125, 50], severidade: 1 };
+      return { classe: "Dentro da meta", cor: [46, 125, 50], severidade: 1, grupo: "meta" };
     }
     if (valor >= 70 && valor < 80) {
-      return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2 };
+      return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2, grupo: "atencao" };
     }
     if (valor > 130 && valor <= 180) {
-      return { classe: "Acima da meta", cor: [245, 124, 0], severidade: 2 };
+      return { classe: "Acima da meta", cor: [245, 124, 0], severidade: 2, grupo: "atencao" };
     }
-    return { classe: "Elevado", cor: [198, 40, 40], severidade: 3 };
+    return { classe: "Elevado", cor: [198, 40, 40], severidade: 3, grupo: "alto" };
   }
 
-  // Pós-prandial
   if (t.includes("após") || t.includes("pós") || t.includes("depois")) {
     if (valor < 180) {
-      return { classe: "Dentro da meta pós-prandial", cor: [46, 125, 50], severidade: 1 };
+      return { classe: "Dentro da meta pós-prandial", cor: [46, 125, 50], severidade: 1, grupo: "meta" };
     }
     if (valor >= 180 && valor <= 250) {
-      return { classe: "Acima da meta pós-prandial", cor: [245, 124, 0], severidade: 2 };
+      return { classe: "Acima da meta pós-prandial", cor: [245, 124, 0], severidade: 2, grupo: "atencao" };
     }
-    return { classe: "Muito elevado", cor: [198, 40, 40], severidade: 3 };
+    return { classe: "Muito elevado", cor: [198, 40, 40], severidade: 3, grupo: "alto" };
   }
 
-  // Antes de dormir / outro / genérico
   if (valor >= 80 && valor <= 140) {
-    return { classe: "Faixa aceitável", cor: [46, 125, 50], severidade: 1 };
+    return { classe: "Faixa aceitável", cor: [46, 125, 50], severidade: 1, grupo: "meta" };
   }
   if (valor >= 70 && valor < 80) {
-    return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2 };
+    return { classe: "Atenção para queda", cor: [245, 124, 0], severidade: 2, grupo: "atencao" };
   }
   if (valor > 140 && valor <= 180) {
-    return { classe: "Atenção", cor: [245, 124, 0], severidade: 2 };
+    return { classe: "Atenção", cor: [245, 124, 0], severidade: 2, grupo: "atencao" };
   }
-  return { classe: "Elevado", cor: [198, 40, 40], severidade: 3 };
+  return { classe: "Elevado", cor: [198, 40, 40], severidade: 3, grupo: "alto" };
 }
 
 function calcularMedia(lista) {
@@ -302,12 +367,37 @@ function calcularDesvioPadrao(lista) {
   return Math.sqrt(variancia);
 }
 
-function obterTendencia(listaOrdenada) {
-  if (listaOrdenada.length < 2) return "Dados insuficientes";
+function obterTendenciaClinica(listaOrdenada) {
+  if (listaOrdenada.length < 3) return "Dados insuficientes";
 
-  const primeiro = listaOrdenada[0].valor;
-  const ultimo = listaOrdenada[listaOrdenada.length - 1].valor;
-  const diferenca = ultimo - primeiro;
+  const valores = listaOrdenada.map(i => i.valor);
+  const desvio = calcularDesvioPadrao(listaOrdenada);
+
+  let subidas = 0;
+  let descidas = 0;
+
+  for (let i = 1; i < valores.length; i++) {
+    const dif = valores[i] - valores[i - 1];
+    if (dif > 15) subidas++;
+    if (dif < -15) descidas++;
+  }
+
+  const maximo = Math.max(...valores);
+  const minimo = Math.min(...valores);
+  const amplitude = maximo - minimo;
+
+  if (desvio > 30 || amplitude > 80) {
+    if (subidas > 0 && descidas > 0) {
+      return "Oscilante";
+    }
+  }
+
+  const primeiroTerco = valores.slice(0, Math.ceil(valores.length / 3));
+  const ultimoTerco = valores.slice(-Math.ceil(valores.length / 3));
+
+  const mediaInicio = primeiroTerco.reduce((a, b) => a + b, 0) / primeiroTerco.length;
+  const mediaFim = ultimoTerco.reduce((a, b) => a + b, 0) / ultimoTerco.length;
+  const diferenca = mediaFim - mediaInicio;
 
   if (Math.abs(diferenca) <= 10) return "Estável";
   if (diferenca > 10) return "Em elevação";
@@ -323,6 +413,25 @@ function agruparPorTipo(lista) {
   return grupos;
 }
 
+function contarClassificacoes(lista) {
+  const resultado = {
+    dentroMeta: 0,
+    atencao: 0,
+    alto: 0,
+    baixo: 0
+  };
+
+  lista.forEach((item) => {
+    const grupo = classificarMedicao(item.valor, item.tipo).grupo;
+    if (grupo === "meta") resultado.dentroMeta++;
+    if (grupo === "atencao") resultado.atencao++;
+    if (grupo === "alto") resultado.alto++;
+    if (grupo === "baixo") resultado.baixo++;
+  });
+
+  return resultado;
+}
+
 function gerarAlertas(lista) {
   const hipo1 = lista.filter((i) => i.valor < 70).length;
   const hipo2 = lista.filter((i) => i.valor < 54).length;
@@ -332,13 +441,8 @@ function gerarAlertas(lista) {
 
   const alertas = [];
 
-  if (hipo1 > 0) {
-    alertas.push(`${hipo1} episódio(s) com glicemia abaixo de 70 mg/dL.`);
-  }
-
-  if (hipo2 > 0) {
-    alertas.push(`${hipo2} episódio(s) com glicemia abaixo de 54 mg/dL.`);
-  }
+  if (hipo1 > 0) alertas.push(`${hipo1} episódio(s) com glicemia abaixo de 70 mg/dL.`);
+  if (hipo2 > 0) alertas.push(`${hipo2} episódio(s) com glicemia abaixo de 54 mg/dL.`);
 
   if (acima180 >= 3) {
     alertas.push(`Frequência relevante de valores acima de 180 mg/dL no período.`);
@@ -346,9 +450,7 @@ function gerarAlertas(lista) {
     alertas.push(`${acima180} episódio(s) com glicemia acima de 180 mg/dL.`);
   }
 
-  if (acima250 > 0) {
-    alertas.push(`${acima250} episódio(s) com glicemia acima de 250 mg/dL.`);
-  }
+  if (acima250 > 0) alertas.push(`${acima250} episódio(s) com glicemia acima de 250 mg/dL.`);
 
   if (desvio > 50) {
     alertas.push("Variabilidade glicêmica muito elevada no período.");
@@ -363,29 +465,131 @@ function gerarAlertas(lista) {
   return alertas;
 }
 
-function contarClassificacoes(lista) {
-  const contagem = {
-    "Dentro da meta": 0,
-    "Dentro da meta pós-prandial": 0,
-    "Faixa aceitável": 0,
-    "Atenção": 0,
-    "Atenção para queda": 0,
-    "Acima da meta": 0,
-    "Acima da meta pós-prandial": 0,
-    "Elevado": 0,
-    "Muito elevado": 0,
-    "Hipoglicemia nível 1": 0,
-    "Hipoglicemia nível 2": 0
-  };
+function analisarQualidadeDados(lista, dataInicio, dataFim) {
+  const dias = {};
+  const inicio = new Date(`${dataInicio}T00:00:00`);
+  const fim = new Date(`${dataFim}T00:00:00`);
 
   lista.forEach((item) => {
-    const classe = classificarMedicao(item.valor, item.tipo).classe;
-    if (contagem[classe] !== undefined) {
-      contagem[classe]++;
+    if (!dias[item.data]) {
+      dias[item.data] = {
+        total: 0,
+        temManha: false,
+        temTarde: false,
+        temNoite: false,
+        itens: []
+      };
+    }
+
+    dias[item.data].total++;
+    dias[item.data].itens.push(item);
+
+    const hora = parseInt(item.hora.split(":")[0], 10);
+
+    if (hora >= 4 && hora < 12) dias[item.data].temManha = true;
+    if (hora >= 12 && hora < 18) dias[item.data].temTarde = true;
+    if (hora >= 18) dias[item.data].temNoite = true;
+  });
+
+  const todosDiasPeriodo = [];
+  const cursor = new Date(inicio);
+
+  while (cursor <= fim) {
+    const ano = cursor.getFullYear();
+    const mes = String(cursor.getMonth() + 1).padStart(2, "0");
+    const dia = String(cursor.getDate()).padStart(2, "0");
+    todosDiasPeriodo.push(`${ano}-${mes}-${dia}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  let diasComRegistro = 0;
+  let diasCompletos = 0;
+  let diasIncompletos = 0;
+  let diasSemRegistro = 0;
+  const listaDiasIncompletos = [];
+
+  todosDiasPeriodo.forEach((data) => {
+    const info = dias[data];
+
+    if (!info) {
+      diasSemRegistro++;
+      return;
+    }
+
+    diasComRegistro++;
+
+    const completo = info.temManha && info.temTarde && info.temNoite;
+
+    if (completo) {
+      diasCompletos++;
+    } else {
+      diasIncompletos++;
+      listaDiasIncompletos.push({
+        data,
+        total: info.total,
+        periodos: [
+          info.temManha ? "manhã" : null,
+          info.temTarde ? "tarde" : null,
+          info.temNoite ? "noite" : null
+        ].filter(Boolean)
+      });
     }
   });
 
-  return contagem;
+  const mediaMedicoesDia = diasComRegistro > 0 ? lista.length / diasComRegistro : 0;
+
+  return {
+    diasComRegistro,
+    diasCompletos,
+    diasIncompletos,
+    diasSemRegistro,
+    mediaMedicoesDia,
+    listaDiasIncompletos
+  };
+}
+
+function extrairEventosRelevantes(lista) {
+  const eventos = [];
+  if (!lista.length) return eventos;
+
+  const maxItem = lista.reduce((a, b) => (a.valor > b.valor ? a : b));
+  const minItem = lista.reduce((a, b) => (a.valor < b.valor ? a : b));
+
+  eventos.push({
+    tipo: "maximo",
+    texto: `Pico máximo de ${maxItem.valor} mg/dL em ${formatarData(maxItem.data)} às ${maxItem.hora} (${maxItem.tipo}).`
+  });
+
+  eventos.push({
+    tipo: "minimo",
+    texto: `Menor valor de ${minItem.valor} mg/dL em ${formatarData(minItem.data)} às ${minItem.hora} (${minItem.tipo}).`
+  });
+
+  const hipos = lista.filter(i => i.valor < 70);
+  hipos.forEach(item => {
+    eventos.push({
+      tipo: "hipo",
+      texto: `Hipoglicemia registrada: ${item.valor} mg/dL em ${formatarData(item.data)} às ${item.hora} (${item.tipo}).`
+    });
+  });
+
+  const altos = lista.filter(i => i.valor > 180);
+  if (altos.length > 0) {
+    const agrupadoPorTipo = {};
+    altos.forEach(item => {
+      if (!agrupadoPorTipo[item.tipo]) agrupadoPorTipo[item.tipo] = 0;
+      agrupadoPorTipo[item.tipo]++;
+    });
+
+    Object.keys(agrupadoPorTipo).forEach(tipo => {
+      eventos.push({
+        tipo: "alto",
+        texto: `${agrupadoPorTipo[tipo]} medição(ões) acima de 180 mg/dL em "${tipo}".`
+      });
+    });
+  }
+
+  return eventos;
 }
 
 function adicionarCabecalhoRodape(doc, titulo = "Relatório Clínico de Glicemia") {
@@ -479,10 +683,12 @@ async function gerarRelatorio() {
   const maior = Math.max(...filtrados.map((i) => i.valor));
   const menor = Math.min(...filtrados.map((i) => i.valor));
   const desvio = calcularDesvioPadrao(filtrados);
-  const tendencia = obterTendencia(filtrados);
+  const tendencia = obterTendenciaClinica(filtrados);
   const alertas = gerarAlertas(filtrados);
   const gruposPorTipo = agruparPorTipo(filtrados);
   const classificacoes = contarClassificacoes(filtrados);
+  const qualidadeDados = analisarQualidadeDados(filtrados, dataInicio, dataFim);
+  const eventosRelevantes = extrairEventosRelevantes(filtrados);
 
   const doc = new jsPDF({
     orientation: "portrait",
@@ -552,36 +758,19 @@ async function gerarRelatorio() {
 
   desenharBlocoResumo(doc, 15, y, 58, 22, "Tendência", tendencia, [123, 31, 162]);
   desenharBlocoResumo(doc, 76, y, 58, 22, "Variabilidade", `${desvio.toFixed(1)}`, [0, 121, 107]);
-  desenharBlocoResumo(doc, 137, y, 58, 22, "Hipoglicemias", classificacoes["Hipoglicemia nível 1"] + classificacoes["Hipoglicemia nível 2"], [198, 40, 40]);
+  desenharBlocoResumo(doc, 137, y, 58, 22, "Hipoglicemias", classificacoes.baixo, [198, 40, 40]);
 
   y += 32;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.setTextColor(33, 33, 33);
-  doc.text("Classificação das medições", 15, y);
+  doc.text("Classificação consolidada", 15, y);
 
   y += 6;
 
   const total = filtrados.length;
   const pct = (n) => `${((n / total) * 100).toFixed(1)}%`;
-
-  const dentroMeta =
-    classificacoes["Dentro da meta"] +
-    classificacoes["Dentro da meta pós-prandial"] +
-    classificacoes["Faixa aceitável"];
-
-  const atencao =
-    classificacoes["Atenção"] +
-    classificacoes["Atenção para queda"] +
-    classificacoes["Acima da meta"] +
-    classificacoes["Acima da meta pós-prandial"];
-
-  const alto =
-    classificacoes["Elevado"] +
-    classificacoes["Muito elevado"] +
-    classificacoes["Hipoglicemia nível 1"] +
-    classificacoes["Hipoglicemia nível 2"];
 
   doc.setFillColor(248, 249, 250);
   doc.setDrawColor(225, 225, 225);
@@ -591,15 +780,36 @@ async function gerarRelatorio() {
   doc.setFontSize(10);
 
   doc.setTextColor(46, 125, 50);
-  doc.text(`Dentro da meta/faixa: ${dentroMeta} (${pct(dentroMeta)})`, 20, y + 10);
+  doc.text(`Dentro da meta/faixa: ${classificacoes.dentroMeta} (${pct(classificacoes.dentroMeta)})`, 20, y + 10);
 
   doc.setTextColor(245, 124, 0);
-  doc.text(`Atenção: ${atencao} (${pct(atencao)})`, 20, y + 20);
+  doc.text(`Atenção: ${classificacoes.atencao} (${pct(classificacoes.atencao)})`, 20, y + 20);
 
   doc.setTextColor(198, 40, 40);
-  doc.text(`Alto risco/fora da meta: ${alto} (${pct(alto)})`, 105, y + 10);
+  doc.text(`Baixo risco / alto risco: ${classificacoes.baixo + classificacoes.alto} (${pct(classificacoes.baixo + classificacoes.alto)})`, 105, y + 10);
 
   y += 36;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(33, 33, 33);
+  doc.text("Qualidade dos dados", 15, y);
+
+  y += 6;
+
+  doc.setFillColor(248, 249, 250);
+  doc.setDrawColor(225, 225, 225);
+  doc.roundedRect(15, y, 180, 30, 3, 3, "FD");
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(50, 50, 50);
+  doc.text(`Dias com registro: ${qualidadeDados.diasComRegistro}`, 20, y + 9);
+  doc.text(`Dias completos: ${qualidadeDados.diasCompletos}`, 20, y + 17);
+  doc.text(`Dias incompletos: ${qualidadeDados.diasIncompletos}`, 105, y + 9);
+  doc.text(`Média de medições por dia: ${qualidadeDados.mediaMedicoesDia.toFixed(1)}`, 105, y + 17);
+
+  y += 38;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -623,7 +833,32 @@ async function gerarRelatorio() {
     yAlertas += 8;
   });
 
-  y += alturaAlertas + 10;
+  doc.addPage();
+  y = 18;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(33, 33, 33);
+  doc.text("Eventos clínicos relevantes", 15, y);
+
+  y += 10;
+
+  doc.setFillColor(248, 249, 250);
+  doc.setDrawColor(225, 225, 225);
+  doc.roundedRect(15, y, 180, 70, 3, 3, "FD");
+
+  let yEventos = y + 10;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(50, 50, 50);
+
+  eventosRelevantes.forEach((evento) => {
+    const linhas = doc.splitTextToSize(`• ${evento.texto}`, 165);
+    doc.text(linhas, 20, yEventos);
+    yEventos += linhas.length * 6 + 3;
+  });
+
+  y += 80;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -649,6 +884,37 @@ async function gerarRelatorio() {
     yTipos += 8;
   });
 
+  y += alturaTipos + 12;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(33, 33, 33);
+  doc.text("Dias com dados incompletos", 15, y);
+
+  y += 6;
+
+  const incompletos = qualidadeDados.listaDiasIncompletos;
+  const alturaIncompletos = Math.max(20, incompletos.length * 8 + 8);
+
+  doc.setFillColor(250, 250, 250);
+  doc.setDrawColor(225, 225, 225);
+  doc.roundedRect(15, y, 180, alturaIncompletos, 3, 3, "FD");
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(50, 50, 50);
+
+  let yInc = y + 8;
+  if (incompletos.length === 0) {
+    doc.text("• Não foram identificados dias incompletos no período.", 20, yInc);
+  } else {
+    incompletos.forEach((item) => {
+      const periodos = item.periodos.length ? item.periodos.join(", ") : "sem distribuição identificada";
+      doc.text(`• ${formatarData(item.data)}: ${item.total} medição(ões) registradas (${periodos}).`, 20, yInc);
+      yInc += 8;
+    });
+  }
+
   doc.addPage();
   y = 18;
 
@@ -661,10 +927,10 @@ async function gerarRelatorio() {
 
   const colunas = {
     data: 15,
-    hora: 35,
-    tipo: 52,
-    valor: 96,
-    classe: 116,
+    hora: 34,
+    tipo: 50,
+    valor: 95,
+    classe: 115,
     obs: 150
   };
 
@@ -741,7 +1007,9 @@ async function gerarRelatorio() {
 
   const observacoesInterpretativas = [];
 
-  if (tendencia === "Em elevação") {
+  if (tendencia === "Oscilante") {
+    observacoesInterpretativas.push("Os valores apresentam comportamento oscilante no período analisado, com variações relevantes entre as medições.");
+  } else if (tendencia === "Em elevação") {
     observacoesInterpretativas.push("Os valores mostram tendência de elevação ao longo do período analisado.");
   } else if (tendencia === "Em queda") {
     observacoesInterpretativas.push("Os valores mostram tendência de redução ao longo do período analisado.");
@@ -749,13 +1017,9 @@ async function gerarRelatorio() {
     observacoesInterpretativas.push("Os valores demonstram comportamento relativamente estável no período analisado.");
   }
 
-  if ((classificacoes["Hipoglicemia nível 1"] + classificacoes["Hipoglicemia nível 2"]) > 0) {
-    observacoesInterpretativas.push("Foram identificados episódios compatíveis com hipoglicemia, merecendo atenção na correlação com sintomas, alimentação e medicação.");
-  }
-
-  if ((classificacoes["Muito elevado"] + classificacoes["Elevado"] + classificacoes["Acima da meta pós-prandial"]) > 0) {
-    observacoesInterpretativas.push("Há registros acima da meta em parte das medições, o que pode ser útil para revisão do padrão glicêmico pelo profissional responsável.");
-  }
+  eventosRelevantes.forEach((evento) => {
+    observacoesInterpretativas.push(evento.texto);
+  });
 
   if (desvio > 50) {
     observacoesInterpretativas.push("A variabilidade glicêmica está muito elevada, sugerindo oscilação importante entre as medições.");
@@ -763,6 +1027,10 @@ async function gerarRelatorio() {
     observacoesInterpretativas.push("A variabilidade glicêmica está aumentada no período.");
   } else {
     observacoesInterpretativas.push("A variabilidade glicêmica está relativamente controlada dentro do conjunto de medições registradas.");
+  }
+
+  if (qualidadeDados.diasIncompletos > 0) {
+    observacoesInterpretativas.push("A interpretação deve considerar a presença de dias com registro incompleto, o que pode influenciar comparações entre os dias.");
   }
 
   observacoesInterpretativas.push("Este relatório é um material de apoio e não substitui avaliação médica individualizada.");
@@ -792,6 +1060,7 @@ async function gerarRelatorio() {
   doc.save(nomeArquivo);
 }
 
+iniciarMascaraNascimento();
 iniciarApp();
 
 if ("serviceWorker" in navigator) {
