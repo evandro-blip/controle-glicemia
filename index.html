@@ -72,7 +72,7 @@
 
       <div class="divider"></div>
 
-      <h3>Gerar Relatório</h3>
+      <h3>Configurar Relatório</h3>
 
       <label for="dataInicio">Data inicial</label>
       <input type="date" id="dataInicio" />
@@ -80,9 +80,20 @@
       <label for="dataFim">Data final</label>
       <input type="date" id="dataFim" />
 
-      <button onclick="gerarRelatorio()">Gerar Relatório Clínico</button>
+      <button onclick="atualizarRelatorioNaTela()">Atualizar Relatório na Tela</button>
+      <button onclick="gerarRelatorio()">Exportar PDF Clínico</button>
 
-      <button class="danger" onclick="limparDados()">Limpar todas as medições</button>
+      <div class="divider"></div>
+
+      <h3>Relatório Interno</h3>
+      <section id="relatorioTela" class="relatorio-box">
+        <p class="vazio">Nenhum relatório gerado ainda. Clique em "Atualizar Relatório na Tela".</p>
+      </section>
+
+      <div class="divider"></div>
+
+      <button class="danger" onclick="limparDados()">Limpar medições de teste</button>
+      <button class="secondary" onclick="limparCadastroCompleto()">Limpar cadastro completo</button>
     </section>
   </main>
 
