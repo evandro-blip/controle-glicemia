@@ -2,7 +2,6 @@ let indiceEdicao = null;
 
 function formatarCampoNascimento(valor) {
   const numeros = valor.replace(/\D/g, "").slice(0, 8);
-
   if (numeros.length <= 2) return numeros;
   if (numeros.length <= 4) return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
   return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4)}`;
@@ -294,6 +293,84 @@ function limparCadastroCompleto() {
   location.reload();
 }
 
+function exportarHistoricoJson() {
+  const dados = JSON.parse(localStorage.getItem("dados")) || [];
+
+  if (!dados.length) {
+    alert("Não há medições para exportar.");
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(dados, null, 2)], {
+    type: "application/json"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "historico-glicemia-teste.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importarHistoricoJson(event) {
+  const arquivo = event.target.files[0];
+  if (!arquivo) return;
+
+  const leitor = new FileReader();
+
+  leitor.onload = function (e) {
+    try {
+      const conteudo = e.target.result;
+      const dadosImportados = JSON.parse(conteudo);
+
+      if (!Array.isArray(dadosImportados)) {
+        throw new Error("Formato inválido.");
+      }
+
+      const dadosValidados = dadosImportados.map((item) => {
+        if (
+          !item.data ||
+          !item.hora ||
+          !item.tipo ||
+          typeof item.valor === "undefined"
+        ) {
+          throw new Error("Há registros incompletos no arquivo.");
+        }
+
+        return {
+          data: String(item.data),
+          hora: String(item.hora),
+          tipo: String(item.tipo),
+          valor: Number(item.valor),
+          observacao: item.observacao ? String(item.observacao) : ""
+        };
+      });
+
+      localStorage.setItem("dados", JSON.stringify(dadosValidados));
+      carregarLista();
+      preencherPeriodoComBaseNosDados();
+      document.getElementById("relatorioTela").innerHTML = `<p class="vazio">Histórico importado com sucesso. Clique em "Atualizar Relatório na Tela".</p>`;
+      alert("Histórico importado com sucesso!");
+    } catch (erro) {
+      alert("Não foi possível importar o arquivo. Verifique se é um JSON válido.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  leitor.readAsText(arquivo);
+}
+
+function preencherPeriodoComBaseNosDados() {
+  const dados = JSON.parse(localStorage.getItem("dados")) || [];
+  if (!dados.length) return;
+
+  const datas = dados.map((d) => d.data).sort();
+  document.getElementById("dataInicio").value = datas[0];
+  document.getElementById("dataFim").value = datas[datas.length - 1];
+}
+
 function formatarData(dataIso) {
   if (!dataIso) return "";
   const [ano, mes, dia] = dataIso.split("-");
@@ -307,38 +384,33 @@ function normalizarTipo(tipo) {
 function classificarMedicao(valor, tipo) {
   const t = normalizarTipo(tipo);
 
-  if (valor < 54) {
-    return { classe: "Hipoglicemia nível 2", cor: [183, 28, 28], grupo: "baixo" };
-  }
-
-  if (valor < 70) {
-    return { classe: "Hipoglicemia nível 1", cor: [198, 40, 40], grupo: "baixo" };
-  }
+  if (valor < 54) return { classe: "Hipoglicemia nível 2", grupo: "baixo" };
+  if (valor < 70) return { classe: "Hipoglicemia nível 1", grupo: "baixo" };
 
   if (t.includes("jejum")) {
-    if (valor >= 80 && valor <= 130) return { classe: "Dentro da meta", cor: [46, 125, 50], grupo: "meta" };
-    if (valor >= 70 && valor < 80) return { classe: "Atenção para queda", cor: [245, 124, 0], grupo: "atencao" };
-    if (valor > 130 && valor <= 180) return { classe: "Acima da meta", cor: [245, 124, 0], grupo: "atencao" };
-    return { classe: "Muito elevado", cor: [198, 40, 40], grupo: "alto" };
+    if (valor >= 80 && valor <= 130) return { classe: "Dentro da meta", grupo: "meta" };
+    if (valor >= 70 && valor < 80) return { classe: "Atenção para queda", grupo: "atencao" };
+    if (valor > 130 && valor <= 180) return { classe: "Acima da meta", grupo: "atencao" };
+    return { classe: "Muito elevado", grupo: "alto" };
   }
 
   if (t.includes("antes do almoço") || t.includes("antes do jantar")) {
-    if (valor >= 80 && valor <= 130) return { classe: "Dentro da meta", cor: [46, 125, 50], grupo: "meta" };
-    if (valor >= 70 && valor < 80) return { classe: "Atenção para queda", cor: [245, 124, 0], grupo: "atencao" };
-    if (valor > 130 && valor <= 180) return { classe: "Acima da meta", cor: [245, 124, 0], grupo: "atencao" };
-    return { classe: "Elevado", cor: [198, 40, 40], grupo: "alto" };
+    if (valor >= 80 && valor <= 130) return { classe: "Dentro da meta", grupo: "meta" };
+    if (valor >= 70 && valor < 80) return { classe: "Atenção para queda", grupo: "atencao" };
+    if (valor > 130 && valor <= 180) return { classe: "Acima da meta", grupo: "atencao" };
+    return { classe: "Elevado", grupo: "alto" };
   }
 
   if (t.includes("após") || t.includes("pós") || t.includes("depois")) {
-    if (valor < 180) return { classe: "Dentro da meta pós-prandial", cor: [46, 125, 50], grupo: "meta" };
-    if (valor >= 180 && valor <= 250) return { classe: "Acima da meta pós-prandial", cor: [245, 124, 0], grupo: "atencao" };
-    return { classe: "Muito elevado", cor: [198, 40, 40], grupo: "alto" };
+    if (valor < 180) return { classe: "Dentro da meta pós-prandial", grupo: "meta" };
+    if (valor >= 180 && valor <= 250) return { classe: "Acima da meta pós-prandial", grupo: "atencao" };
+    return { classe: "Muito elevado", grupo: "alto" };
   }
 
-  if (valor >= 80 && valor <= 140) return { classe: "Faixa aceitável", cor: [46, 125, 50], grupo: "meta" };
-  if (valor >= 70 && valor < 80) return { classe: "Atenção para queda", cor: [245, 124, 0], grupo: "atencao" };
-  if (valor > 140 && valor <= 180) return { classe: "Atenção", cor: [245, 124, 0], grupo: "atencao" };
-  return { classe: "Elevado", cor: [198, 40, 40], grupo: "alto" };
+  if (valor >= 80 && valor <= 140) return { classe: "Faixa aceitável", grupo: "meta" };
+  if (valor >= 70 && valor < 80) return { classe: "Atenção para queda", grupo: "atencao" };
+  if (valor > 140 && valor <= 180) return { classe: "Atenção", grupo: "atencao" };
+  return { classe: "Elevado", grupo: "alto" };
 }
 
 function calcularMedia(lista) {
@@ -373,8 +445,8 @@ function obterTendenciaClinica(listaOrdenada) {
   const minimo = Math.min(...valores);
   const amplitude = maximo - minimo;
 
-  if (desvio > 30 || amplitude > 80) {
-    if (subidas > 0 && descidas > 0) return "Oscilante";
+  if ((desvio > 30 || amplitude > 80) && subidas > 0 && descidas > 0) {
+    return "Oscilante";
   }
 
   const primeiroTerco = valores.slice(0, Math.ceil(valores.length / 3));
@@ -758,7 +830,6 @@ function atualizarRelatorioNaTela() {
   `;
 }
 
-// ===== PDF =====
 function gerarGraficoBase64(lista) {
   const canvas = document.createElement("canvas");
   canvas.width = 800;
@@ -856,6 +927,7 @@ async function gerarRelatorio() {
   doc.addPage();
   doc.text("Eventos Relevantes", 10, 10);
   let y = 20;
+
   dados.eventosRelevantes.forEach((evento) => {
     const linhas = doc.splitTextToSize(`• ${evento}`, 180);
     doc.text(linhas, 10, y);
@@ -893,6 +965,8 @@ async function gerarRelatorio() {
 
   doc.save(`relatorio-clinico-glicemia-${dados.nome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
 }
+
+document.getElementById("arquivoHistorico").addEventListener("change", importarHistoricoJson);
 
 iniciarMascaraNascimento();
 iniciarApp();
