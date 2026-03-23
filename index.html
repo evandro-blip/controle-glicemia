@@ -36,6 +36,18 @@
 
       <div class="divider"></div>
 
+      <h3>Histórico de teste</h3>
+      <button onclick="document.getElementById('arquivoHistorico').click()">Importar histórico JSON</button>
+      <button class="secondary" onclick="exportarHistoricoJson()">Exportar histórico JSON</button>
+      <input
+        type="file"
+        id="arquivoHistorico"
+        accept=".json,application/json"
+        class="hidden"
+      />
+
+      <div class="divider"></div>
+
       <h3>Nova Medição</h3>
 
       <label for="dataMedicao">Data da medição</label>
