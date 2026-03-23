@@ -193,6 +193,7 @@ button.danger {
 .relatorio-subtitulo {
   color: #555;
   margin-bottom: 16px;
+  line-height: 1.5;
 }
 
 .relatorio-grid {
