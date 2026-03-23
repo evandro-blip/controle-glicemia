@@ -10,7 +10,7 @@ body {
 }
 
 .container {
-  max-width: 560px;
+  max-width: 760px;
   margin: 0 auto;
   padding: 24px 16px 40px;
 }
@@ -175,4 +175,86 @@ button.danger {
   text-align: center;
   color: #666;
   padding: 14px;
+}
+
+.relatorio-box {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.relatorio-titulo {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.relatorio-subtitulo {
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.relatorio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.relatorio-card {
+  background: white;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.relatorio-card small {
+  display: block;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.relatorio-card strong {
+  font-size: 18px;
+}
+
+.relatorio-bloco {
+  background: white;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.relatorio-bloco h4 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.relatorio-bloco ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.relatorio-bloco li {
+  margin-bottom: 6px;
+}
+
+.tabela-relatorio {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tabela-relatorio th,
+.tabela-relatorio td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabela-relatorio th {
+  background: #f0f0f0;
 }
