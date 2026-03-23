@@ -19,7 +19,13 @@
       <input type="text" id="nome" placeholder="Seu nome" />
 
       <label for="nascimento">Data de nascimento</label>
-      <input type="date" id="nascimento" />
+      <input
+        type="text"
+        id="nascimento"
+        inputmode="numeric"
+        placeholder="Ex: 28/05/1978"
+        maxlength="10"
+      />
 
       <button onclick="salvarCadastro()">Salvar</button>
     </section>
